@@ -392,6 +392,10 @@ function TPano(d) {
                 if (d.debug == true) {
                     console.log('点击坐标：', intersects[i].point);
                 }
+                //编辑器扩展：若配置了positionClick回调，则把点击到的三维坐标传出去
+                if (d.positionClick != null) {
+                    d.positionClick(intersects[i].point, intersects[i].object, intersects);
+                }
                 //检测点击热点是否跳转场地
                 if (intersects[i].object.jumpTo != null && i == 0) {
                     switchPhotoN(intersects[i].object.jumpTo);
