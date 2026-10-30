@@ -207,7 +207,11 @@
             url: 'pano/DSCN0019.JPG',
             name: '篮球场旁'
         },
-        // 注：原 DSCN0035_1.avi 视频项已移除——浏览器不支持 avi 解码，且 40MB 体积拖慢整页加载
+        {
+            url: 'pano/DSCN0035.mp4',
+            type: 'VIDEO',
+            name: '全景视频'
+        },
     ];
     // 已启用 lazyLoad 懒加载：首屏只加载第一张全景图，切换时按需加载其余照片
     var tpano = new TPano({
