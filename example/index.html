@@ -223,6 +223,11 @@
                 //解锁控制器
                 controllerLock = true;
 
+                //懒加载模式下无需等全部照片下载完：相册缩略图由浏览器自行按需加载，
+                //点击缩略图时 tpano.re.switchPhoto 会自动按需加载目标照片
+                cratePhoneBox();
+                photoBoxLock = true;
+
                 //6秒后隐藏功能键
                 setTimeout(() => {
                     hidefunction();
@@ -230,13 +235,6 @@
             }
 
             gi++;
-
-            if (gi == panoPhoto.length) {
-                //全部加载完毕
-                //这个时间点开始加载相册，此功能未经后端优化的情况下加载的是原始照片，故非常的占用带宽，我们希望晚一些加载它
-                cratePhoneBox();
-                photoBoxLock = true;
-            }
         },
         switchLoad: function (e) {
             console.log(e);
