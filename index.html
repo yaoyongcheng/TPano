@@ -183,6 +183,8 @@
 <script src="./example/jquery-2.1.4.js"></script>
 <script src="./dist/fastloading.js"></script>
 <script>
+    // 并行预热浏览器缓存（tpano.js 内部串行加载，在限速链路上较慢）
+    ['example/1.jpg'].forEach(function (u) { new Image().src = u; });
     var tpano = new TPano({
         el: 'pano',//照片查看器根节点dom的id
         photo: [

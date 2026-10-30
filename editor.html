@@ -400,6 +400,10 @@
             el.innerHTML = '';
             if (photos.length === 0) { tpano = null; return; }
             currentIdx = Math.min(currentIdx, photos.length - 1);
+            // 并行预热浏览器缓存（tpano.js 内部串行加载，在限速链路上较慢）
+            photos.forEach(function (p) {
+                if (!p.isBlob) { var pre = new Image(); pre.src = p.url; }
+            });
             // 若目标是当前首图则无需登记；否则等全部照片加载完由 photoLoad 回调切换
             pendingSwitch = currentIdx > 0 ? currentIdx : null;
             tpano = new TPano(buildConfig());
