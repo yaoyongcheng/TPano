@@ -628,7 +628,7 @@
                 div.className = 'photo-box-div';
                 var img = document.createElement('img');
                 img.className = 'photo-box-img';
-                img.src = p.isVideo ? './example/video.png' : p.url;
+                img.src = p.isVideo ? './example/video.png' : (p.thumb || p.url);
                 var name = document.createElement('p');
                 name.className = 'photo-box-p';
                 name.textContent = p.name;
@@ -750,7 +750,7 @@
                 div.className = 'photo-item' + (i === currentIdx ? ' current' : '');
                 var img = document.createElement('img');
                 img.className = 'thumb';
-                img.src = p.isVideo ? './example/video.png' : p.url;
+                img.src = p.isVideo ? './example/video.png' : (p.thumb || p.url);
                 var name = document.createElement('div');
                 name.className = 'name';
                 name.textContent = p.name;
@@ -933,12 +933,35 @@
             return s.replace(/<\/(script)/gi, '<\\/$1');
         }
 
+        // 用 canvas 生成 320x160 缩略图 data URL（用于导出时替换相册栏原图，大幅减小体积）
+        function makeThumb(url) {
+            return new Promise(function (res) {
+                var img = new Image();
+                img.onload = function () {
+                    try {
+                        var c = document.createElement('canvas');
+                        var W = 320, H = 160;
+                        c.width = W; c.height = H;
+                        var ctx = c.getContext('2d');
+                        // 等比缩放居中裁剪为 2:1
+                        var s = Math.max(W / img.width, H / img.height);
+                        var w = img.width * s, h = img.height * s;
+                        ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+                        res(c.toDataURL('image/jpeg', 0.7));
+                    } catch (e) { res(null); }
+                };
+                img.onerror = function () { res(null); };
+                img.src = url;
+            });
+        }
+
         $('btn-export').onclick = async function () {
             if (!photos.length) { toast('请先添加全景图'); return; }
             toast('正在导出（本地图片转为 base64）...');
             var ph = [], hs = [], i;
             for (i = 0; i < photos.length; i++) {
                 var item = { name: photos[i].name, url: await toDataURL(photos[i].url) };
+                if (photos[i].thumb) item.thumb = await toDataURL(photos[i].thumb);
                 if (photos[i].isVideo) item.type = 'VIDEO';
                 if (photos[i].fov) item.fov = photos[i].fov;
                 ph.push(item);
@@ -966,7 +989,7 @@
                     var ph = cfg.photo || cfg.photos || [];
                     photos = ph.filter(function (p) { return p.url && p.url.indexOf('blob:') !== 0; })
                         .map(function (p) {
-                            return { name: p.name, url: p.url, isBlob: false, isVideo: p.type === 'VIDEO', fov: p.fov || null };
+                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: p.type === 'VIDEO', fov: p.fov || null };
                         });
                     hotspots = cfg.hotspot || [];
                     if (cfg.opts) {
@@ -1007,6 +1030,9 @@
                 var photoCfg = [];
                 for (var j = 0; j < photos.length; j++) {
                     var item = { url: await toDataURL(photos[j].url), name: photos[j].name };
+                    // 相册栏/侧栏缩略图用小图，避免展示页体积膨胀
+                    if (photos[j].thumb) item.thumb = await toDataURL(photos[j].thumb);
+                    else if (!photos[j].isVideo) item.thumb = await makeThumb(photos[j].url);
                     if (photos[j].isVideo) item.type = 'VIDEO';
                     if (photos[j].fov) item.fov = photos[j].fov;
                     photoCfg.push(item);
@@ -1074,7 +1100,7 @@
                         + '#photo-box .photo-box-p{position:absolute;left:0;bottom:0;text-align:center;width:200px;color:#fff;padding:2px 0;background-color:rgba(20,20,20,.4);box-sizing:border-box}\n';
                     chromeHtml += '<div id="photo-box"><div id="photo-box-list"></div></div>\n';
                     chromeJs += 'var albumOpen=false;\n'
-                        + 'function buildAlbum(){var box=document.getElementById("photo-box-list");if(!box)return;box.innerHTML="";for(var i=0;i<PHOTOS.length;i++){var p=PHOTOS[i];var div=document.createElement("div");div.className="photo-box-div";var img=document.createElement("img");img.className="photo-box-img";img.src=p.type==="VIDEO"?VIDEOICON:p.url;var nm=document.createElement("p");nm.className="photo-box-p";nm.textContent=p.name;div.appendChild(img);div.appendChild(nm);(function(idx){div.onclick=function(){tpano.re.switchPhoto(idx+1)};})(i);box.appendChild(div);}}\n'
+                        + 'function buildAlbum(){var box=document.getElementById("photo-box-list");if(!box)return;box.innerHTML="";for(var i=0;i<PHOTOS.length;i++){var p=PHOTOS[i];var div=document.createElement("div");div.className="photo-box-div";var img=document.createElement("img");img.className="photo-box-img";img.src=p.type==="VIDEO"?VIDEOICON:(p.thumb||p.url);var nm=document.createElement("p");nm.className="photo-box-p";nm.textContent=p.name;div.appendChild(img);div.appendChild(nm);(function(idx){div.onclick=function(){tpano.re.switchPhoto(idx+1)};})(i);box.appendChild(div);}}\n'
                         + 'buildAlbum();\n'
                         + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";}\n'
                         + 'function renderAlbumCur(idx){var kids=document.getElementById("photo-box-list").children;for(var i=0;i<kids.length;i++){kids[i].style.outline=i===idx?"2px solid #4f8cff":"none";}}\n';
@@ -1092,8 +1118,8 @@
                     + 'var tpano=new TPano({\n'
                     + 'el:"pano",\n'
                     + 'lazyLoad:true,\n'
-                    + 'photo:' + JSON.stringify(photoCfg).replace(/</g, '\\u003c') + ',\n'
-                    + 'hotspot:' + JSON.stringify(hsCfg).replace(/</g, '\\u003c') + ',\n'
+                    + 'photo:PHOTOS,\n'
+                    + 'hotspot:HOTSPOTS,\n'
                     + 'rotateAnimateController:' + opts.rotate + ',\n'
                     + 'DeviceOrientationControls:' + opts.gyro + ',\n'
                     + 'debug:' + opts.debug + ',\n'
@@ -1113,6 +1139,7 @@
                     + '<script>\n' + safeEmbed(texts[1]) + '\n<\/script>\n'
                     + '<script>\n' + safeEmbed(texts[2]) + '\n<\/script>\n'
                     + '<script>\nvar PHOTOS=' + JSON.stringify(photoCfg).replace(/</g, '\\u003c') + ';\n'
+                    + 'var HOTSPOTS=' + JSON.stringify(hsCfg).replace(/</g, '\\u003c') + ';\n'
                     + 'var VIDEOICON=' + JSON.stringify(iconVideo) + ';\n'
                     + safeEmbed(chromeJs)
                     + '\n' + safeEmbed(callbacksJs)
@@ -1204,6 +1231,7 @@
                         return {
                             name: p.name,
                             url: p.isBlob ? '' : p.url,
+                            thumb: p.thumb || '',
                             isVideo: !!p.isVideo,
                             fov: p.fov || null
                         };
@@ -1219,7 +1247,7 @@
                 if (s && s.photos && s.photos.length) {
                     photos = s.photos.filter(function (p) { return p.url; })
                         .map(function (p) {
-                            return { name: p.name, url: p.url, isBlob: false, isVideo: !!p.isVideo, fov: p.fov || null };
+                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: !!p.isVideo, fov: p.fov || null };
                         });
                     hotspots = s.hotspots || [];
                 }
@@ -1229,13 +1257,13 @@
                     }
                 }
             } catch (e) { }
-            // 首次使用时预置示例全景图（panorama_2x1.jpg 为用户实测可用的 2:1 球面全景）
+            // 首次使用时预置示例全景图（panorama_2x1.jpg 为用户实测可用的 2:1 球面全景；thumb 为小缩略图，避免侧栏把原图全量拉下来）
             if (!photos.length) {
                 photos = [
-                    { name: '办公区', url: './panorama_2x1.jpg', isBlob: false },
-                    { name: '示例一', url: './example/pano/DSCN0007.JPG', isBlob: false },
-                    { name: '示例二', url: './example/pano/DSCN0009.JPG', isBlob: false },
-                    { name: '示例三', url: './example/pano/DSCN0013.JPG', isBlob: false }
+                    { name: '办公区', url: './panorama_2x1.jpg', thumb: './thumb-panorama_2x1.jpg', isBlob: false },
+                    { name: '示例一', url: './example/pano/DSCN0007.JPG', thumb: './example/pano/thumb-DSCN0007.jpg', isBlob: false },
+                    { name: '示例二', url: './example/pano/DSCN0009.JPG', thumb: './example/pano/thumb-DSCN0009.jpg', isBlob: false },
+                    { name: '示例三', url: './example/pano/DSCN0013.JPG', thumb: './example/pano/thumb-DSCN0013.jpg', isBlob: false }
                 ];
             }
             rebuild();
