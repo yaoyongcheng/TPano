@@ -637,7 +637,7 @@
                 div.onclick = function () {
                     if (!tpano) return;
                     var r = tpano.re.switchPhoto(i + 1);
-                    if (r && r.status !== 'OK') toast(r.msg || '切换失败');
+                    if (r && r.status === 'ERROR') toast(r.msg || '切换失败');
                 };
                 box.appendChild(div);
             });
@@ -774,7 +774,7 @@
                 div.onclick = function () {
                     if (!tpano) return;
                     var r = tpano.re.switchPhoto(i + 1);
-                    if (r.status !== 'OK') toast(r.msg || '切换失败');
+                    if (r && r.status === 'ERROR') toast(r.msg || '切换失败');
                 };
                 box.appendChild(div);
             });

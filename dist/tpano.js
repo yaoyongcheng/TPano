@@ -149,6 +149,11 @@ function TPano(d) {
                     loadTextureLoader(i);
                 }
                 setTimeout(switchPhotoN, 1000, i);
+                //照片尚在按需加载中，属正常中间态而非错误；加载完成后会自动重试切换
+                response = {
+                    status: 'LOADING',
+                    msg: '照片正在加载中'
+                };
             }
 
             function switchGo() {
