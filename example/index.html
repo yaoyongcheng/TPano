@@ -203,15 +203,11 @@
         }, {
             url: 'pano/DSCN0018.JPG',
             name: '小公园'
-        }, {
+        },         {
             url: 'pano/DSCN0019.JPG',
             name: '篮球场旁'
         },
-        {
-            url: 'pano/DSCN0035_1.avi',
-            type: 'VIDEO',
-            name: '视频'
-        },
+        // 注：原 DSCN0035_1.avi 视频项已移除——浏览器不支持 avi 解码，且 40MB 体积拖慢整页加载
     ];
     var tpano = new TPano({
         el: 'pano',//照片查看器根节点dom的id
