@@ -266,6 +266,11 @@
             width: 0%;
             background-color: #ffffff;
             transition: width 15s linear;
+            animation: initload 30s linear forwards;
+        }
+        @keyframes initload {
+            from { width: 0%; }
+            to { width: 95%; }
         }
 
         /* ===== 右侧悬浮功能栏（同示例页 #controller-y） ===== */
@@ -495,7 +500,7 @@
 
     <div id="toast"></div>
 
-    <script src="./example/three.js"></script>
+    <script src="./example/three.min.js"></script>
     <script src="./dist/tpano.js"></script>
     <script src="./example/DeviceOrientationControls.js"></script>
     <script>
@@ -598,6 +603,7 @@
         function loadAnimate() {
             var bar = $('load-bar-x'), box = $('load');
             box.style.display = 'flex';
+            bar.style.animation = 'none';
             bar.style.transition = 'none';
             bar.style.width = '0%';
             // 强制回流后恢复过渡动画
@@ -607,6 +613,7 @@
         }
         function closeLoadAnimate() {
             var bar = $('load-bar-x');
+            bar.style.animation = 'none';
             bar.style.transition = 'width 1s linear';
             bar.style.width = '100%';
             setTimeout(function () { $('load').style.display = 'none'; }, 1100);
@@ -988,7 +995,7 @@
             toast('正在打包（脚本与图片内嵌，大图会稍慢）...');
             try {
                 // 1. 内联三个脚本
-                var scripts = ['./example/three.js', './dist/tpano.js', './example/DeviceOrientationControls.js'];
+                var scripts = ['./example/three.min.js', './dist/tpano.js', './example/DeviceOrientationControls.js'];
                 var texts = [];
                 for (var i = 0; i < scripts.length; i++) {
                     var r = await fetch(scripts[i]);
