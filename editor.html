@@ -242,6 +242,135 @@
             top: 14px; left: 14px;
             z-index: 10;
         }
+
+        /* ===== 加载动画（同示例页 #load） ===== */
+        #load {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(46, 46, 46, 0.5);
+            top: 0; left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+        #load-bar-k {
+            width: 40%;
+            height: 1px;
+            background-color: #555555;
+            transition: height .3s;
+        }
+        #load-bar-x {
+            height: 3px;
+            width: 0%;
+            background-color: #ffffff;
+            transition: width 15s linear;
+        }
+
+        /* ===== 右侧悬浮功能栏（同示例页 #controller-y） ===== */
+        #controller-y {
+            position: absolute;
+            bottom: 40px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(20, 20, 20, 0.4);
+            border-radius: 50px;
+            padding: 2px;
+            overflow: hidden;
+            width: 42px;
+            height: 170px;
+            transition: height .2s;
+            z-index: 6;
+        }
+        #controller-y .item {
+            background-color: #ffffff;
+            border-radius: 50px;
+            box-sizing: border-box;
+            width: 36px;
+            height: 36px;
+            padding: 6px;
+            margin: 3.2px;
+            position: relative;
+            cursor: pointer;
+            transition: opacity .4s;
+        }
+        #controller-y .item > img { width: 100%; height: 100%; display: block; }
+        #controller-y .point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #00aeff;
+            border-radius: 50px;
+            right: 0;
+            bottom: -2px;
+            display: none;
+        }
+        #controller-y .item-s { position: absolute; bottom: 2px; }
+        #controller-y.collapsed { height: 42px; }
+        body.no-bar #controller-y { display: none; }
+
+        /* ===== 底部相册栏（同示例页 #photo-box） ===== */
+        #photo-box {
+            position: absolute;
+            width: 100%;
+            padding: 8px 10px;
+            left: 0; bottom: 0;
+            display: none;
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            transition: opacity .8s, height .8s;
+            z-index: 6;
+        }
+        #photo-box.open { display: block; }
+        #photo-box > div {
+            background-color: rgba(20, 20, 20, 0.4);
+            border-radius: 5px;
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 12px 18px;
+        }
+        #photo-box .photo-box-div {
+            margin: 0 4px;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        #photo-box .photo-box-div.cur .photo-box-p { background-color: rgba(79,140,255,.85); }
+        #photo-box .photo-box-img {
+            width: 160px;
+            height: 96px;
+            background-color: #ffffffcc;
+            object-fit: cover;
+            display: block;
+        }
+        #photo-box .photo-box-p {
+            position: absolute;
+            left: 0; bottom: 0;
+            text-align: center;
+            width: 160px;
+            color: #ffffff;
+            padding: 2px 0;
+            background-color: rgba(20, 20, 20, 0.4);
+            font-size: 12px;
+        }
+        body.no-album #photo-box { display: none !important; }
+
+        /* ===== 展示功能开关 ===== */
+        .opt-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .opt-row input { accent-color: var(--accent); cursor: pointer; }
+        .opt-row .sub { color: var(--text-dim); font-size: 11px; }
     </style>
 </head>
 
@@ -277,6 +406,17 @@
             <div id="hs-list"></div>
         </div>
 
+        <!-- 展示功能（同示例页功能点） -->
+        <div class="sec">
+            <h3>展示功能（实时预览，随展示页导出）</h3>
+            <label class="opt-row"><input type="checkbox" id="opt-rotate"> 镜头自转 <span class="sub">打开后自动旋转，拖拽即停</span></label>
+            <label class="opt-row"><input type="checkbox" id="opt-gyro"> 体感控制 <span class="sub">手机陀螺仪，需 https</span></label>
+            <label class="opt-row"><input type="checkbox" id="opt-debug"> 调试模式 <span class="sub">控制台输出点击坐标</span></label>
+            <label class="opt-row"><input type="checkbox" id="opt-load"> 加载动画 <span class="sub">切换照片时显示进度条</span></label>
+            <label class="opt-row"><input type="checkbox" id="opt-album"> 底部相册栏 <span class="sub">横向缩略图快速切换</span></label>
+            <label class="opt-row"><input type="checkbox" id="opt-bar"> 右侧功能栏 <span class="sub">6 秒无操作自动隐藏</span></label>
+        </div>
+
         <!-- 导入导出 -->
         <div class="sec" style="flex:1">
             <h3>配置</h3>
@@ -299,6 +439,35 @@
         <div id="pano"></div>
         <div id="pano-mode-tip">添加热点模式：在全景图上点击要放置热点的位置</div>
         <button class="btn" id="exit-preview">← 退出预览</button>
+
+        <!-- 加载动画（同示例页） -->
+        <div id="load">
+            <div id="load-bar-k"><div id="load-bar-x"></div></div>
+        </div>
+
+        <!-- 右侧悬浮功能栏（同示例页） -->
+        <div id="controller-y">
+            <div id="c-photo" class="item item-f" title="相册">
+                <img src="./example/img/bar/photo.png" alt="相册">
+                <div class="point"></div>
+            </div>
+            <div id="c-gyro" class="item item-f" title="体感控制">
+                <img src="./example/img/bar/gyro.png" alt="体感">
+                <div class="point"></div>
+            </div>
+            <div id="c-rotate" class="item item-f" title="镜头自转">
+                <img alt="自转" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36'/%3E%3Cpath d='M21 3v6h-6'/%3E%3C/svg%3E">
+                <div class="point"></div>
+            </div>
+            <div id="c-hide" class="item item-s" title="隐藏功能键">
+                <img src="./example/img/bar/function.png" alt="功能">
+            </div>
+        </div>
+
+        <!-- 底部相册栏（同示例页） -->
+        <div id="photo-box">
+            <div id="photo-box-list"></div>
+        </div>
     </div>
 
     <!-- ===== 热点弹窗 ===== -->
@@ -331,12 +500,14 @@
     <script src="./example/DeviceOrientationControls.js"></script>
     <script>
         //==================== 状态 ====================
-        var photos = [];      // {name, url, isBlob}
+        var photos = [];      // {name, url, isBlob, isVideo, fov}
         var hotspots = [];    // {source, position:{x,y,z}, imgUrl, jumpTo}
         var currentIdx = 0;
         var tpano = null;
         var addMode = false;          // 添加热点模式
         var pendingPoint = null;      // 待确认的坐标
+        // 展示功能开关（与示例页功能点一一对应，实时预览 + 随展示页导出）
+        var opts = { rotate: true, gyro: false, debug: false, load: true, album: true, bar: true };
 
         var ICONS = [
             './example/img/foot.png',
@@ -370,11 +541,16 @@
                 }),
                 hotspot: hotspots.slice(),
                 MouseController: true,
-                rotateAnimateController: false,
-                DeviceOrientationControls: false,
-                debug: false,
+                rotateAnimateController: opts.rotate,
+                DeviceOrientationControls: opts.gyro,
+                debug: opts.debug,
                 lazyLoad: true, //按需加载，避免全量预下载拖慢打开速度
-                gyroSport: function () { }, // 兜底：避免开启体感时因未提供回调而报错
+                gyroSport: function (e) {
+                    if (!e && !gyroMsgShown) {
+                        gyroMsgShown = true;
+                        toast('设备可能不支持陀螺仪，或未启用 https。多数浏览器安全策略只对 https 网站提供陀螺仪服务。');
+                    }
+                },
                 positionClick: onPositionClick,
                 switchLoad: function (e) {
                     if (e && e.loading) {
@@ -382,6 +558,20 @@
                         renderPhotoList();
                         renderHsList();
                         updateFovInputs();
+                        renderAlbumCur();
+                    }
+                    if (opts.load) {
+                        if (e && e.status === 'loading') loadAnimate();
+                        else if (e && e.status === 'end') closeLoadAnimate();
+                    }
+                },
+                photoLoad: function (e) {
+                    if (opts.load) closeLoadAnimate();
+                    // 首图就绪：构建相册栏并启动功能栏自动隐藏（同示例页）
+                    if (!albumBuilt && photos.length) {
+                        albumBuilt = true;
+                        buildAlbum();
+                        if (opts.bar) scheduleBarHide();
                     }
                 }
             };
@@ -390,12 +580,115 @@
         function rebuild() {
             var el = $('pano');
             el.innerHTML = '';
+            albumBuilt = false;
             if (photos.length === 0) { tpano = null; return; }
             currentIdx = Math.min(currentIdx, photos.length - 1);
             tpano = new TPano(buildConfig());
             //懒加载模式：目标照片未加载时框架会按需加载并自动重试，直接切换即可
             if (currentIdx > 0) tpano.re.switchPhoto(currentIdx + 1);
         }
+
+        //==================== 画布区展示功能（同示例页） ====================
+        var gyroMsgShown = false;   // gyroSport 提示只弹一次
+        var albumBuilt = false;     // 相册栏是否已构建
+        var barHidden = false;      // 功能栏是否处于收起状态
+        var barHideTimer = null;
+
+        //---- 加载动画 ----
+        function loadAnimate() {
+            var bar = $('load-bar-x'), box = $('load');
+            box.style.display = 'flex';
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            // 强制回流后恢复过渡动画
+            void bar.offsetWidth;
+            bar.style.transition = 'width 15s linear';
+            bar.style.width = '99%';
+        }
+        function closeLoadAnimate() {
+            var bar = $('load-bar-x');
+            bar.style.transition = 'width 1s linear';
+            bar.style.width = '100%';
+            setTimeout(function () { $('load').style.display = 'none'; }, 1100);
+        }
+
+        //---- 底部相册栏 ----
+        function buildAlbum() {
+            var box = $('photo-box-list');
+            box.innerHTML = '';
+            photos.forEach(function (p, i) {
+                var div = document.createElement('div');
+                div.className = 'photo-box-div';
+                var img = document.createElement('img');
+                img.className = 'photo-box-img';
+                img.src = p.isVideo ? './example/video.png' : p.url;
+                var name = document.createElement('p');
+                name.className = 'photo-box-p';
+                name.textContent = p.name;
+                div.appendChild(img);
+                div.appendChild(name);
+                div.onclick = function () {
+                    if (!tpano) return;
+                    var r = tpano.re.switchPhoto(i + 1);
+                    if (r && r.status !== 'OK') toast(r.msg || '切换失败');
+                };
+                box.appendChild(div);
+            });
+            renderAlbumCur();
+        }
+        function renderAlbumCur() {
+            var kids = $('photo-box-list').children;
+            for (var i = 0; i < kids.length; i++) {
+                kids[i].classList.toggle('cur', i === currentIdx);
+            }
+        }
+        function toggleAlbum() {
+            var box = $('photo-box');
+            var on = !box.classList.contains('open');
+            box.classList.toggle('open', on);
+            box.style.opacity = on ? '1' : '0';
+            box.style.height = on ? '132px' : '0';
+            $('c-photo').querySelector('.point').style.display = on ? 'block' : 'none';
+        }
+
+        //---- 右侧功能栏 ----
+        function setGyro(on) {
+            opts.gyro = on;
+            $('opt-gyro').checked = on;
+            $('c-gyro').querySelector('.point').style.display = on ? 'block' : 'none';
+            if (tpano) tpano.re.switchGyro(on);
+            save();
+        }
+        function setRotate(on) {
+            opts.rotate = on;
+            $('opt-rotate').checked = on;
+            $('c-rotate').querySelector('.point').style.display = on ? 'block' : 'none';
+            if (tpano) tpano.re.switchRotate(on);
+            save();
+        }
+        function toggleBarHide() {
+            barHidden = !barHidden;
+            var items = document.querySelectorAll('#controller-y .item-f');
+            Array.prototype.forEach.call(items, function (el) {
+                el.style.opacity = barHidden ? '0' : '1';
+                el.style.pointerEvents = barHidden ? 'none' : 'auto';
+            });
+            $('controller-y').classList.toggle('collapsed', barHidden);
+        }
+        //6 秒无操作自动隐藏功能栏（同示例页行为）
+        function scheduleBarHide() {
+            clearTimeout(barHideTimer);
+            barHideTimer = setTimeout(function () {
+                if (!barHidden) toggleBarHide();
+            }, 6000);
+        }
+
+        $('c-photo').onclick = toggleAlbum;
+        $('c-gyro').onclick = function () { setGyro(!opts.gyro); };
+        $('c-rotate').onclick = function () { setRotate(!opts.rotate); };
+        $('c-hide').onclick = toggleBarHide;
+        // 拖动画布也算操作，重置自动隐藏计时
+        $('pano').addEventListener('pointerdown', scheduleBarHide);
 
         //==================== 点击坐标（打补丁后的回调） ====================
         function onPositionClick(point, object, intersects) {
@@ -651,7 +944,7 @@
                     jumpTo: hotspots[i].jumpTo
                 });
             }
-            download('tpano-config.json', JSON.stringify({ photo: ph, hotspot: hs }, null, 2));
+            download('tpano-config.json', JSON.stringify({ photo: ph, hotspot: hs, opts: opts }, null, 2));
             toast('配置已导出（已内嵌媒体数据）');
         };
 
@@ -669,6 +962,13 @@
                             return { name: p.name, url: p.url, isBlob: false, isVideo: p.type === 'VIDEO', fov: p.fov || null };
                         });
                     hotspots = cfg.hotspot || [];
+                    if (cfg.opts) {
+                        for (var k2 in opts) {
+                            if (cfg.opts[k2] != null) opts[k2] = !!cfg.opts[k2];
+                        }
+                        syncOptInputs();
+                        applyOptChrome();
+                    }
                     currentIdx = 0;
                     rebuild();
                     save();
@@ -682,6 +982,7 @@
         };
 
         // 导出单文件自包含展示页（脚本与图片全部内嵌，双击即可打开）
+        // 并按「展示功能」开关内嵌示例页同款 UI：加载动画 / 底部相册栏 / 右侧功能栏（含体感、自转、自动隐藏）
         $('btn-export-html').onclick = async function () {
             if (!photos.length) { toast('请先添加全景图'); return; }
             toast('正在打包（脚本与图片内嵌，大图会稍慢）...');
@@ -694,7 +995,7 @@
                     if (!r.ok) throw new Error('脚本获取失败: ' + scripts[i]);
                     texts.push(await r.text());
                 }
-                // 2. 媒体转 data URL
+                // 2. 媒体与功能栏图标转 data URL
                 var totalSize = photos.reduce(function (s, p) { return s + (p.size || 0); }, 0);
                 var photoCfg = [];
                 for (var j = 0; j < photos.length; j++) {
@@ -710,17 +1011,105 @@
                     if (h.jumpTo) item.jumpTo = h.jumpTo;
                     hsCfg.push(item);
                 }
-                var cfg = { el: 'pano', lazyLoad: true, photo: photoCfg, hotspot: hsCfg, rotateAnimateController: true };
-                // 3. 组装单文件 HTML
-                var cfgJson = JSON.stringify(cfg).replace(/<\//g, '<\\/');
+                var iconPhoto = opts.bar ? await toDataURL('./example/img/bar/photo.png') : '';
+                var iconGyro = opts.bar ? await toDataURL('./example/img/bar/gyro.png') : '';
+                var iconFunc = opts.bar ? await toDataURL('./example/img/bar/function.png') : '';
+                var iconVideo = opts.album ? await toDataURL('./example/video.png') : '';
+
+                // 3. 生成各功能模块的 HTML / CSS / JS（按开关裁剪）
+                var ROT_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36'/%3E%3Cpath d='M21 3v6h-6'/%3E%3C/svg%3E";
+                var css = '*{margin:0}#pano{width:100vw;height:100vh}body{position:relative;overflow:hidden;font-family:sans-serif}\n';
+                var chromeHtml = '';
+                var chromeJs = 'var gyroMsg=false;\n';
+
+                if (opts.load) {
+                    css += '#load{position:absolute;width:100%;height:100%;background-color:rgba(46,46,46,.5);top:0;left:0;display:flex;justify-content:center;align-items:center;z-index:5}\n'
+                        + '#load-bar-k{width:40%;height:1px;background-color:#555;transition:height .3s}\n'
+                        + '#load-bar-x{height:3px;width:0%;background-color:#fff;transition:width 15s linear}\n';
+                    chromeHtml += '<div id="load"><div id="load-bar-k"><div id="load-bar-x"></div></div></div>\n';
+                    chromeJs += 'var loadBox=document.getElementById("load"),loadBar=document.getElementById("load-bar-x");\n'
+                        + 'function loadAnimate(){loadBox.style.display="flex";loadBar.style.transition="none";loadBar.style.width="0%";void loadBar.offsetWidth;loadBar.style.transition="width 15s linear";loadBar.style.width="99%";}\n'
+                        + 'function closeLoadAnimate(){loadBar.style.transition="width 1s linear";loadBar.style.width="100%";setTimeout(function(){loadBox.style.display="none"},1100);}\n'
+                        + 'loadAnimate();\n';
+                }
+
+                if (opts.bar) {
+                    css += '#controller-y{position:absolute;bottom:40px;right:16px;display:flex;flex-direction:column;background-color:rgba(20,20,20,.4);border-radius:50px;padding:2px;width:42px;height:170px;overflow:hidden;transition:height .2s;z-index:6}\n'
+                        + '#controller-y .item{background-color:#fff;border-radius:50px;box-sizing:border-box;width:36px;height:36px;padding:6px;margin:3.2px;position:relative;cursor:pointer;transition:opacity .4s}\n'
+                        + '#controller-y .item>img{width:100%;height:100%;display:block}\n'
+                        + '#controller-y .point{position:absolute;width:10px;height:10px;background-color:#00aeff;border-radius:50px;right:0;bottom:-2px;display:none}\n'
+                        + '#controller-y .item-s{position:absolute;bottom:2px}\n'
+                        + '#controller-y.collapsed{height:42px}\n';
+                    chromeHtml += '<div id="controller-y">'
+                        + '<div id="v-photo" class="item item-f" title="相册"><img src="' + iconPhoto + '" alt="相册"><div class="point"></div></div>'
+                        + '<div id="v-gyro" class="item item-f" title="体感控制"><img src="' + iconGyro + '" alt="体感"><div class="point"></div></div>'
+                        + '<div id="v-rotate" class="item item-f" title="镜头自转"><img src="' + ROT_SVG + '" alt="自转"><div class="point"></div></div>'
+                        + '<div id="v-hide" class="item item-s" title="隐藏功能键"><img src="' + iconFunc + '" alt="功能"></div>'
+                        + '</div>\n';
+                    chromeJs += 'var barHidden=false,barTimer=null;\n'
+                        + 'function toggleBarHide(){barHidden=!barHidden;var items=document.querySelectorAll("#controller-y .item-f");for(var i=0;i<items.length;i++){items[i].style.opacity=barHidden?"0":"1";items[i].style.pointerEvents=barHidden?"none":"auto";}document.getElementById("controller-y").classList.toggle("collapsed",barHidden);}\n'
+                        + 'document.getElementById("v-hide").onclick=toggleBarHide;\n'
+                        + 'document.getElementById("pano").addEventListener("pointerdown",function(){clearTimeout(barTimer);barTimer=setTimeout(function(){if(!barHidden)toggleBarHide()},6000);});\n'
+                        + 'setTimeout(function(){if(!barHidden)toggleBarHide()},6000);\n';
+                    if (opts.album) {
+                        chromeJs += 'document.getElementById("v-photo").onclick=toggleAlbum;\n';
+                    }
+                    chromeJs += 'document.getElementById("v-gyro").onclick=function(){setGyro(!gyroOn)};\n'
+                        + 'document.getElementById("v-rotate").onclick=function(){setRotate(!rotateOn)};\n';
+                }
+
+                if (opts.album) {
+                    css += '#photo-box{position:absolute;width:100vw;padding:8px 10px;left:0;bottom:0;display:none;opacity:0;height:0;overflow:hidden;transition:opacity .8s,height .8s;box-sizing:border-box}\n'
+                        + '#photo-box.open{display:block}\n'
+                        + '#photo-box>div{background-color:rgba(20,20,20,.4);border-radius:5px;display:flex;overflow-x:auto;overflow-y:hidden;padding:12px 18px}\n'
+                        + '#photo-box .photo-box-div{margin:0 4px;position:relative;cursor:pointer;flex-shrink:0}\n'
+                        + '#photo-box .photo-box-img{width:200px;height:120px;background-color:#ffffffcc;object-fit:cover;display:block}\n'
+                        + '#photo-box .photo-box-p{position:absolute;left:0;bottom:0;text-align:center;width:200px;color:#fff;padding:2px 0;background-color:rgba(20,20,20,.4);box-sizing:border-box}\n';
+                    chromeHtml += '<div id="photo-box"><div id="photo-box-list"></div></div>\n';
+                    chromeJs += 'var albumOpen=false;\n'
+                        + 'function buildAlbum(){var box=document.getElementById("photo-box-list");if(!box)return;box.innerHTML="";for(var i=0;i<PHOTOS.length;i++){var p=PHOTOS[i];var div=document.createElement("div");div.className="photo-box-div";var img=document.createElement("img");img.className="photo-box-img";img.src=p.type==="VIDEO"?VIDEOICON:p.url;var nm=document.createElement("p");nm.className="photo-box-p";nm.textContent=p.name;div.appendChild(img);div.appendChild(nm);(function(idx){div.onclick=function(){tpano.re.switchPhoto(idx+1)};})(i);box.appendChild(div);}}\n'
+                        + 'buildAlbum();\n'
+                        + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";}\n'
+                        + 'function renderAlbumCur(idx){var kids=document.getElementById("photo-box-list").children;for(var i=0;i<kids.length;i++){kids[i].style.outline=i===idx?"2px solid #4f8cff":"none";}}\n';
+                    if (!opts.bar) {
+                        // 没有功能栏时相册栏默认展开
+                        chromeJs += 'toggleAlbum();\n';
+                    }
+                }
+
+                // 4. 组装运行时（TPano 实例在展示页内联创建，回调直接驱动各功能模块）
+                var callbacksJs = 'var gyroOn=' + opts.gyro + ',rotateOn=' + opts.rotate + ';\n'
+                    + 'function setGyro(on){gyroOn=on;tpano.re.switchGyro(on);var pt=document.querySelector("#v-gyro .point");if(pt)pt.style.display=on?"block":"none";}\n'
+                    + 'function setRotate(on){rotateOn=on;tpano.re.switchRotate(on);var pt=document.querySelector("#v-rotate .point");if(pt)pt.style.display=on?"block":"none";}\n'
+                    + 'window.addEventListener("resize",function(){tpano.re.resizeRendererToDisplaySize(window.innerWidth,window.innerHeight);});\n'
+                    + 'var tpano=new TPano({\n'
+                    + 'el:"pano",\n'
+                    + 'lazyLoad:true,\n'
+                    + 'photo:' + JSON.stringify(photoCfg).replace(/</g, '\\u003c') + ',\n'
+                    + 'hotspot:' + JSON.stringify(hsCfg).replace(/</g, '\\u003c') + ',\n'
+                    + 'rotateAnimateController:' + opts.rotate + ',\n'
+                    + 'DeviceOrientationControls:' + opts.gyro + ',\n'
+                    + 'debug:' + opts.debug + ',\n'
+                    + 'gyroSport:function(e){if(!e&&!gyroMsg){gyroMsg=true;alert("设备可能不支持陀螺仪,或者您没有启用https。多数浏览器安全策略只对启用了https的网站提供陀螺仪服务。");}},\n'
+                    + 'switchLoad:function(e){'
+                    + (opts.load ? 'if(e.status==="loading"){loadAnimate();}else if(e.status==="end"){closeLoadAnimate();}else{alert("加载出错");}' : 'if(e.status!=="loading"&&e.status!=="end"){alert("加载出错");}')
+                    + (opts.album ? 'renderAlbumCur(e.loading.id-1);' : '')
+                    + '},\n'
+                    + 'photoLoad:function(e){' + (opts.load ? 'closeLoadAnimate();' : '') + '}\n'
+                    + '});\n';
+
                 var html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n'
                     + '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-                    + '<title>TPano 全景漫游</title>\n<style>*{margin:0}#pano{width:100vw;height:100vh}</style>\n</head>\n'
-                    + '<body id="pano"></body>\n'
+                    + '<title>TPano 全景漫游</title>\n<style>\n' + css + '</style>\n</head>\n'
+                    + '<body id="pano">\n' + chromeHtml + '</body>\n'
                     + '<script>\n' + safeEmbed(texts[0]) + '\n<\/script>\n'
                     + '<script>\n' + safeEmbed(texts[1]) + '\n<\/script>\n'
                     + '<script>\n' + safeEmbed(texts[2]) + '\n<\/script>\n'
-                    + '<script>\nvar tpano = new TPano(' + cfgJson + ');\n<\/script>\n</html>';
+                    + '<script>\nvar PHOTOS=' + JSON.stringify(photoCfg).replace(/</g, '\\u003c') + ';\n'
+                    + 'var VIDEOICON=' + JSON.stringify(iconVideo) + ';\n'
+                    + safeEmbed(chromeJs)
+                    + '\n' + safeEmbed(callbacksJs)
+                    + '\n<\/script>\n</html>';
                 download('tpano-viewer.html', html);
                 toast('单文件展示页已导出（' + Math.round(totalSize / 1048576) + 'MB 媒体已内嵌），双击即可打开');
             } catch (e) {
@@ -755,6 +1144,51 @@
             }
         }
 
+        //==================== 展示功能开关绑定 ====================
+        function applyOptChrome() {
+            document.body.classList.toggle('no-bar', !opts.bar);
+            document.body.classList.toggle('no-album', !opts.album);
+            if (!opts.load) $('load').style.display = 'none';
+            if (!opts.bar) {
+                // 关闭功能栏时复位为展开态，下次开启时正常显示
+                if (barHidden) toggleBarHide();
+            }
+        }
+
+        $('opt-rotate').onchange = function () { setRotate(this.checked); };
+        $('opt-gyro').onchange = function () { setGyro(this.checked); };
+        $('opt-debug').onchange = function () {
+            opts.debug = this.checked;
+            rebuild(); // debug 在框架初始化时读取，需重建实例
+            save();
+        };
+        $('opt-load').onchange = function () {
+            opts.load = this.checked;
+            if (!opts.load) $('load').style.display = 'none';
+            save();
+        };
+        $('opt-album').onchange = function () {
+            opts.album = this.checked;
+            applyOptChrome();
+            save();
+        };
+        $('opt-bar').onchange = function () {
+            opts.bar = this.checked;
+            applyOptChrome();
+            save();
+        };
+
+        function syncOptInputs() {
+            $('opt-rotate').checked = opts.rotate;
+            $('opt-gyro').checked = opts.gyro;
+            $('opt-debug').checked = opts.debug;
+            $('opt-load').checked = opts.load;
+            $('opt-album').checked = opts.album;
+            $('opt-bar').checked = opts.bar;
+            $('c-gyro').querySelector('.point').style.display = opts.gyro ? 'block' : 'none';
+            $('c-rotate').querySelector('.point').style.display = opts.rotate ? 'block' : 'none';
+        }
+
         //==================== 自动保存 / 恢复 ====================
         function save() {
             try {
@@ -767,7 +1201,8 @@
                             fov: p.fov || null
                         };
                     }),
-                    hotspots: hotspots
+                    hotspots: hotspots,
+                    opts: opts
                 }));
             } catch (e) { }
         }
@@ -781,6 +1216,11 @@
                         });
                     hotspots = s.hotspots || [];
                 }
+                if (s && s.opts) {
+                    for (var k in opts) {
+                        if (s.opts[k] != null) opts[k] = !!s.opts[k];
+                    }
+                }
             } catch (e) { }
             // 首次使用时预置示例全景图（panorama_2x1.jpg 为用户实测可用的 2:1 球面全景）
             if (!photos.length) {
@@ -792,6 +1232,8 @@
                 ];
             }
             rebuild();
+            syncOptInputs();
+            applyOptChrome();
         })();
 
         // 自适应窗口

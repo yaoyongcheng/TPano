@@ -282,11 +282,10 @@ function TPano(d) {
     }
     animate();
 
-    //镜头自由旋转
+    //镜头自由旋转（读取 d.rotateAnimateController 以支持运行时通过 re.switchRotate 切换）
     let anglexoz = -90;//相机在xoz平面上的角度
-    var rotateAnimateController = d.rotateAnimateController;
     function rotateAnimate() {
-        if (rotateAnimateController == true && d.DeviceOrientationControls == false) {
+        if (d.rotateAnimateController == true && d.DeviceOrientationControls == false) {
             anglexoz += 0.1;
             if (anglexoz > 360) {
                 anglexoz = 0;
@@ -301,7 +300,7 @@ function TPano(d) {
 
     el.addEventListener('pointerdown', function () {
         if (d.MouseController) {
-            rotateAnimateController = false;
+            d.rotateAnimateController = false;
         }
     });
 
@@ -557,6 +556,14 @@ function TPano(d) {
          */
         seitchMouseController: function seitchMouseController(e) {
             d.MouseController = e;
+        },
+
+        /**
+         * 切换镜头自转
+         * @param bool e 自转开关，true表示打开，false表示关闭
+         */
+        switchRotate: function switchRotate(e) {
+            d.rotateAnimateController = e;
         }
     }
 }
