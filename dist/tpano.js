@@ -11,6 +11,9 @@ function TPano(d) {
     if (d.MouseController == null) {
         d.MouseController = true;
     }
+    if (d.lazyLoad == null) {
+        d.lazyLoad = false; //懒加载：开启后只加载当前显示的照片，切换时按需加载（默认关闭保持兼容）
+    }
 
     //初始化场景、相机、渲染器
     const scene = new THREE.Scene();
@@ -40,6 +43,8 @@ function TPano(d) {
     let mesh = new THREE.Mesh(geometry);
     scene.add(mesh);
     var texture = Array();
+    var loadedSet = {};  //懒加载模式：已完成加载的照片索引
+    var loadingSet = {}; //懒加载模式：正在加载中的照片索引，避免重复发起请求
     let loadTextureLoaderCount = 0;
     loadTextureLoader(loadTextureLoaderCount);
     //用来加载全景照片
@@ -52,14 +57,14 @@ function TPano(d) {
             texture[i] = new THREE.VideoTexture( videoDom );
             //没有找到监听加载的办法，暂时使用延迟模拟回调
             setTimeout(() => {
-                loadTextureLoaderEnd();
+                loadTextureLoaderEnd(i);
             }, 2000);
         } else {
             texture[i] = new THREE.TextureLoader().load(
                 d.photo[i].url,
                 // onLoad回调
                 function () {
-                    loadTextureLoaderEnd();
+                    loadTextureLoaderEnd(i);
                 },
 
                 // 目前暂不支持onProgress的回调
@@ -76,10 +81,10 @@ function TPano(d) {
     }
     //用来控制加载下一张全景照片
     var loadTextureMsg;
-    function loadTextureLoaderEnd() {
-        let i = loadTextureLoaderCount;
-        console.log(texture);
+    function loadTextureLoaderEnd(i) {
         texture[i].panoName = d.photo[i].name;
+        loadedSet[i] = true;
+        delete loadingSet[i];
         loadTextureMsg = {
             'all': d.photo.length,
             'loading': {
@@ -91,11 +96,12 @@ function TPano(d) {
         if (d.photoLoad != null) {
             d.photoLoad(loadTextureMsg);
         }
-        if (loadTextureLoaderCount == 0) {
+        if (i == 0) {
             //初始化加载第一张图片
             switchPhotoN(0);
         }
-        if (loadTextureLoaderCount < d.photo.length - 1) {
+        //非懒加载模式：顺序预加载全部照片；懒加载模式下只加载当前需要的照片
+        if (!d.lazyLoad && i < d.photo.length - 1) {
             loadTextureLoader(++loadTextureLoaderCount);
         }
     }
@@ -112,8 +118,9 @@ function TPano(d) {
         }
 
         if (i < d.photo.length && i >= 0) {
-            //回调通知：注意全景图片换页事件开始，应该检查全景图片是否下载完毕，主要是用于做进度提示功能
-            if (loadTextureMsg.all - loadTextureMsg.Leftover >= i + 1) {
+            //判断目标照片是否已加载完成：懒加载模式查加载记录，预加载模式用全量进度推算
+            var ready = d.lazyLoad ? loadedSet[i] : (loadTextureMsg.all - loadTextureMsg.Leftover >= i + 1);
+            if (ready) {
                 //已加载完成，无需等待
                 if (d.switchLoad != null) {
                     d.switchLoad({
@@ -135,6 +142,11 @@ function TPano(d) {
                         },
                         status: 'loading'
                     });
+                }
+                //懒加载模式：目标照片尚未发起加载时按需加载它
+                if (d.lazyLoad && !loadedSet[i] && !loadingSet[i]) {
+                    loadingSet[i] = true;
+                    loadTextureLoader(i);
                 }
                 setTimeout(switchPhotoN, 1000, i);
             }

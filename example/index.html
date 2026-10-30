@@ -209,15 +209,10 @@
         },
         // 注：原 DSCN0035_1.avi 视频项已移除——浏览器不支持 avi 解码，且 40MB 体积拖慢整页加载
     ];
-    // 并行预热浏览器缓存：tpano.js 内部是串行逐张加载，在限速链路上很慢；
-    // 先用 Image 并行下载（浏览器允许 6 个并发连接），纹理加载器将直接命中缓存
-    panoPhoto.forEach(function (p) {
-        var pre = new Image();
-        pre.src = p.url;
-    });
-
+    // 已启用 lazyLoad 懒加载：首屏只加载第一张全景图，切换时按需加载其余照片
     var tpano = new TPano({
         el: 'pano',//照片查看器根节点dom的id
+        lazyLoad: true,
         photo: panoPhoto,
         photoLoad: function (e) {
             console.log(e);
