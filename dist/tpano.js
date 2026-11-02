@@ -111,6 +111,7 @@ function TPano(d) {
      * @param int i 选择照片张数
      * @return json status，正常返回OK，不正常返回ERROR；msg具体信息
      */
+    var switchTarget = -1; //最后一次请求切换的目标索引：用于取消被新切换取代的过期重试，避免旧定时器把画面切回旧照片
     function switchPhotoN(i) {
         let response = {
             status: 'ERROR',
@@ -118,6 +119,7 @@ function TPano(d) {
         }
 
         if (i < d.photo.length && i >= 0) {
+            switchTarget = i;
             //判断目标照片是否已加载完成：懒加载模式查加载记录，预加载模式用全量进度推算
             var ready = d.lazyLoad ? loadedSet[i] : (loadTextureMsg.all - loadTextureMsg.Leftover >= i + 1);
             if (ready) {
@@ -148,7 +150,12 @@ function TPano(d) {
                     loadingSet[i] = true;
                     loadTextureLoader(i);
                 }
-                setTimeout(switchPhotoN, 1000, i);
+                //重试前校验目标是否已被更新的切换请求取代，已被取代则放弃本次重试
+                setTimeout(function () {
+                    if (switchTarget === i) {
+                        switchPhotoN(i);
+                    }
+                }, 1000);
                 //照片尚在按需加载中，属正常中间态而非错误；加载完成后会自动重试切换
                 response = {
                     status: 'LOADING',

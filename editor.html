@@ -376,6 +376,76 @@
         }
         .opt-row input { accent-color: var(--accent); cursor: pointer; }
         .opt-row .sub { color: var(--text-dim); font-size: 11px; }
+
+        .sec input[type=text] {
+            width: 100%;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 7px 8px;
+            font-size: 13px;
+            outline: none;
+        }
+        .sec input[type=text]:focus { border-color: var(--accent); }
+        .sec .field-label { color: var(--text-dim); font-size: 12px; margin: 8px 0 4px; }
+
+        /* ===== 时间轴（同点位不同时间，同示例页导出样式） ===== */
+        #timeline {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 36px;
+            background: rgba(20, 20, 20, 0.55);
+            border-radius: 24px;
+            padding: 10px 18px 8px;
+            z-index: 6;
+            min-width: 180px;
+            max-width: 70vw;
+            display: none;
+        }
+        #timeline.up { bottom: 160px; }
+        #tl-title {
+            color: #fff;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 6px;
+            opacity: .85;
+            letter-spacing: 1px;
+        }
+        #tl-track { display: flex; align-items: flex-end; position: relative; }
+        #tl-track::before {
+            content: "";
+            position: absolute;
+            left: 30px; right: 30px; bottom: 4px;
+            height: 2px;
+            background: rgba(255, 255, 255, .25);
+        }
+        #timeline .tl-node {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 72px;
+        }
+        #timeline .tl-label {
+            color: #ccc;
+            font-size: 11px;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70px;
+        }
+        #timeline .tl-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #888;
+        }
+        #timeline .tl-node.cur .tl-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        #timeline .tl-node.cur .tl-label { color: #fff; }
+        #timeline .tl-node:hover .tl-dot { background: var(--accent); }
     </style>
 </head>
 
@@ -409,6 +479,17 @@
             </div>
             <div class="coord" id="coord-tip"></div>
             <div id="hs-list"></div>
+        </div>
+
+        <!-- 时间轴（同点位不同时间） -->
+        <div class="sec">
+            <h3>时间轴（同点位不同时间）</h3>
+            <div class="field-label">当前照片的点位分组</div>
+            <input type="text" id="tl-group" placeholder="如：客厅 / 工位A">
+            <div class="field-label">时间标签</div>
+            <input type="text" id="tl-time" placeholder="如：毛坯 / 装修后 / 白天 / 夜景">
+            <label class="opt-row" style="margin-top:8px"><input type="checkbox" id="opt-timeline"> 展示页显示时间轴 <span class="sub">同点位 ≥2 张时出现</span></label>
+            <div id="tl-overview" class="tip"></div>
         </div>
 
         <!-- 展示功能（同示例页功能点） -->
@@ -473,6 +554,12 @@
         <div id="photo-box">
             <div id="photo-box-list"></div>
         </div>
+
+        <!-- 时间轴（同点位不同时间，VR 看房式） -->
+        <div id="timeline">
+            <div id="tl-title"></div>
+            <div id="tl-track"></div>
+        </div>
     </div>
 
     <!-- ===== 热点弹窗 ===== -->
@@ -505,14 +592,14 @@
     <script src="./example/DeviceOrientationControls.js"></script>
     <script>
         //==================== 状态 ====================
-        var photos = [];      // {name, url, isBlob, isVideo, fov}
+        var photos = [];      // {name, url, isBlob, isVideo, fov, group, time}
         var hotspots = [];    // {source, position:{x,y,z}, imgUrl, jumpTo}
         var currentIdx = 0;
         var tpano = null;
         var addMode = false;          // 添加热点模式
         var pendingPoint = null;      // 待确认的坐标
         // 展示功能开关（与示例页功能点一一对应，实时预览 + 随展示页导出）
-        var opts = { rotate: true, gyro: false, debug: false, load: true, album: true, bar: true };
+        var opts = { rotate: true, gyro: false, debug: false, load: true, album: true, bar: true, timeline: true };
 
         var ICONS = [
             './example/img/foot.png',
@@ -563,7 +650,9 @@
                         renderPhotoList();
                         renderHsList();
                         updateFovInputs();
+                        updateTlInputs();
                         renderAlbumCur();
+                        updateTimeline();
                     }
                     if (opts.load) {
                         if (e && e.status === 'loading') loadAnimate();
@@ -586,11 +675,13 @@
             var el = $('pano');
             el.innerHTML = '';
             albumBuilt = false;
-            if (photos.length === 0) { tpano = null; return; }
+            updateTlInputs();
+            if (photos.length === 0) { tpano = null; updateTimeline(); return; }
             currentIdx = Math.min(currentIdx, photos.length - 1);
             tpano = new TPano(buildConfig());
             //懒加载模式：目标照片未加载时框架会按需加载并自动重试，直接切换即可
             if (currentIdx > 0) tpano.re.switchPhoto(currentIdx + 1);
+            updateTimeline();
         }
 
         //==================== 画布区展示功能（同示例页） ====================
@@ -656,6 +747,7 @@
             box.style.opacity = on ? '1' : '0';
             box.style.height = on ? '132px' : '0';
             $('c-photo').querySelector('.point').style.display = on ? 'block' : 'none';
+            positionTimeline();
         }
 
         //---- 右侧功能栏 ----
@@ -730,7 +822,9 @@
                     isBlob: true,
                     isVideo: isVideo,
                     size: f.size,
-                    fov: null
+                    fov: null,
+                    group: '',
+                    time: ''
                 });
             });
             this.value = '';
@@ -845,6 +939,91 @@
             save();
             toast('视野已应用：PC ' + (fov.pc != null ? fov.pc : '默认') + ' / 手机 ' + (fov.phone != null ? fov.phone : '默认'));
         };
+
+        //==================== 时间轴（同点位不同时间，VR 看房式） ====================
+        function esc(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        // 同一分组的照片索引列表（按添加顺序作为时间先后）
+        function groupMembers(group) {
+            if (!group) return [];
+            var arr = [];
+            photos.forEach(function (p, i) { if (p.group === group) arr.push(i); });
+            return arr;
+        }
+        function updateTlInputs() {
+            var p = photos[currentIdx];
+            $('tl-group').value = p && p.group ? p.group : '';
+            $('tl-time').value = p && p.time ? p.time : '';
+        }
+        // 相册栏展开时时间轴上移避让
+        function positionTimeline() {
+            var open = opts.album && $('photo-box').classList.contains('open');
+            $('timeline').classList.toggle('up', !!open);
+        }
+        function updateTimeline() {
+            var box = $('timeline');
+            var p = photos[currentIdx];
+            var grp = p ? (p.group || '') : '';
+            var members = groupMembers(grp);
+            if (!opts.timeline || !grp || members.length < 2 || !tpano) {
+                box.style.display = 'none';
+                renderTlOverview();
+                return;
+            }
+            box.style.display = 'block';
+            positionTimeline();
+            $('tl-title').textContent = grp;
+            var track = $('tl-track');
+            track.innerHTML = '';
+            members.forEach(function (idx) {
+                var node = document.createElement('div');
+                node.className = 'tl-node' + (idx === currentIdx ? ' cur' : '');
+                node.title = photos[idx].name;
+                var label = document.createElement('div');
+                label.className = 'tl-label';
+                label.textContent = photos[idx].time || ('#' + (idx + 1));
+                var dot = document.createElement('div');
+                dot.className = 'tl-dot';
+                node.appendChild(label);
+                node.appendChild(dot);
+                node.onclick = function () {
+                    if (idx === currentIdx || !tpano) return;
+                    var r = tpano.re.switchPhoto(idx + 1);
+                    if (r && r.status === 'ERROR') toast(r.msg || '切换失败');
+                };
+                track.appendChild(node);
+            });
+            renderTlOverview();
+        }
+        function renderTlOverview() {
+            var groups = {};
+            photos.forEach(function (p) {
+                if (p.group) {
+                    if (!groups[p.group]) groups[p.group] = [];
+                    groups[p.group].push(p.time || ('未命名'));
+                }
+            });
+            var parts = Object.keys(groups).map(function (g) {
+                return esc(g) + '：' + groups[g].map(esc).join(' → ');
+            });
+            $('tl-overview').innerHTML = parts.length
+                ? '已分组点位：<br>· ' + parts.join('<br>· ')
+                : '给 ≥2 张照片设置同一个「点位分组」和不同「时间标签」，展示时即可用时间轴切换（类似 VR 看房的毛坯/装修/白天/夜景）。';
+        }
+
+        $('tl-group').addEventListener('input', function () {
+            if (!photos[currentIdx]) return;
+            photos[currentIdx].group = this.value.trim();
+            updateTimeline();
+            save();
+        });
+        $('tl-time').addEventListener('input', function () {
+            if (!photos[currentIdx]) return;
+            photos[currentIdx].time = this.value.trim();
+            updateTimeline();
+            save();
+        });
 
         //==================== 热点弹窗 ====================
         var selIcon = ICONS[0];
@@ -964,6 +1143,7 @@
                 if (photos[i].thumb) item.thumb = await toDataURL(photos[i].thumb);
                 if (photos[i].isVideo) item.type = 'VIDEO';
                 if (photos[i].fov) item.fov = photos[i].fov;
+                if (photos[i].group) { item.group = photos[i].group; if (photos[i].time) item.time = photos[i].time; }
                 ph.push(item);
             }
             for (i = 0; i < hotspots.length; i++) {
@@ -989,7 +1169,7 @@
                     var ph = cfg.photo || cfg.photos || [];
                     photos = ph.filter(function (p) { return p.url && p.url.indexOf('blob:') !== 0; })
                         .map(function (p) {
-                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: p.type === 'VIDEO', fov: p.fov || null };
+                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: p.type === 'VIDEO', fov: p.fov || null, group: p.group || '', time: p.time || '' };
                         });
                     hotspots = cfg.hotspot || [];
                     if (cfg.opts) {
@@ -1035,6 +1215,7 @@
                     else if (!photos[j].isVideo) item.thumb = await makeThumb(photos[j].url);
                     if (photos[j].isVideo) item.type = 'VIDEO';
                     if (photos[j].fov) item.fov = photos[j].fov;
+                    if (photos[j].group) { item.group = photos[j].group; if (photos[j].time) item.time = photos[j].time; }
                     photoCfg.push(item);
                 }
                 var hsCfg = [];
@@ -1102,12 +1283,28 @@
                     chromeJs += 'var albumOpen=false;\n'
                         + 'function buildAlbum(){var box=document.getElementById("photo-box-list");if(!box)return;box.innerHTML="";for(var i=0;i<PHOTOS.length;i++){var p=PHOTOS[i];var div=document.createElement("div");div.className="photo-box-div";var img=document.createElement("img");img.className="photo-box-img";img.src=p.type==="VIDEO"?VIDEOICON:(p.thumb||p.url);var nm=document.createElement("p");nm.className="photo-box-p";nm.textContent=p.name;div.appendChild(img);div.appendChild(nm);(function(idx){div.onclick=function(){tpano.re.switchPhoto(idx+1)};})(i);box.appendChild(div);}}\n'
                         + 'buildAlbum();\n'
-                        + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";}\n'
+                        + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";var tl=document.getElementById("timeline");if(tl)tl.classList.toggle("up",albumOpen);}\n'
                         + 'function renderAlbumCur(idx){var kids=document.getElementById("photo-box-list").children;for(var i=0;i<kids.length;i++){kids[i].style.outline=i===idx?"2px solid #4f8cff":"none";}}\n';
                     if (!opts.bar) {
                         // 没有功能栏时相册栏默认展开
                         chromeJs += 'toggleAlbum();\n';
                     }
+                }
+
+                if (opts.timeline) {
+                    css += '#timeline{position:absolute;left:50%;transform:translateX(-50%);bottom:36px;background:rgba(20,20,20,.55);border-radius:24px;padding:10px 18px 8px;z-index:6;min-width:180px;max-width:70vw;display:none}\n'
+                        + '#timeline.up{bottom:160px}\n'
+                        + '#tl-title{color:#fff;font-size:12px;text-align:center;margin-bottom:6px;opacity:.85;letter-spacing:1px}\n'
+                        + '#tl-track{display:flex;align-items:flex-end;position:relative}\n'
+                        + '#tl-track:before{content:"";position:absolute;left:30px;right:30px;bottom:4px;height:2px;background:rgba(255,255,255,.25)}\n'
+                        + '#timeline .tl-node{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:72px}\n'
+                        + '#timeline .tl-label{color:#ccc;font-size:11px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}\n'
+                        + '#timeline .tl-dot{width:10px;height:10px;border-radius:50%;background:#888}\n'
+                        + '#timeline .tl-node.cur .tl-dot{background:#4f8cff;box-shadow:0 0 6px #4f8cff}\n'
+                        + '#timeline .tl-node.cur .tl-label{color:#fff}\n'
+                        + '#timeline .tl-node:hover .tl-dot{background:#4f8cff}\n';
+                    chromeHtml += '<div id="timeline"><div id="tl-title"></div><div id="tl-track"></div></div>\n';
+                    chromeJs += 'function renderTimeline(idx){var box=document.getElementById("timeline");if(!box)return;var cur=PHOTOS[idx]||{};var grp=cur.group||"";var mem=[];for(var i=0;i<PHOTOS.length;i++){if(PHOTOS[i].group===grp)mem.push(i);}if(!grp||mem.length<2){box.style.display="none";return;}box.style.display="block";document.getElementById("tl-title").textContent=grp;var tr=document.getElementById("tl-track");tr.innerHTML="";for(var k=0;k<mem.length;k++){(function(idx2){var n=document.createElement("div");n.className="tl-node"+(idx2===idx?" cur":"");n.title=PHOTOS[idx2].name;var lb=document.createElement("div");lb.className="tl-label";lb.textContent=PHOTOS[idx2].time||("#"+(idx2+1));var dt=document.createElement("div");dt.className="tl-dot";n.appendChild(lb);n.appendChild(dt);n.onclick=function(){if(idx2!==idx&&tpano)tpano.re.switchPhoto(idx2+1);};tr.appendChild(n);})(k);}}\n';
                 }
 
                 // 4. 组装运行时（TPano 实例在展示页内联创建，回调直接驱动各功能模块）
@@ -1127,9 +1324,11 @@
                     + 'switchLoad:function(e){'
                     + (opts.load ? 'if(e.status==="loading"){loadAnimate();}else if(e.status==="end"){closeLoadAnimate();}else{alert("加载出错");}' : 'if(e.status!=="loading"&&e.status!=="end"){alert("加载出错");}')
                     + (opts.album ? 'renderAlbumCur(e.loading.id-1);' : '')
+                    + (opts.timeline ? 'renderTimeline(e.loading.id-1);' : '')
                     + '},\n'
                     + 'photoLoad:function(e){' + (opts.load ? 'closeLoadAnimate();' : '') + '}\n'
-                    + '});\n';
+                    + '});\n'
+                    + (opts.timeline ? 'renderTimeline(0);\n' : '');
 
                 var html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n'
                     + '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
@@ -1182,6 +1381,7 @@
         function applyOptChrome() {
             document.body.classList.toggle('no-bar', !opts.bar);
             document.body.classList.toggle('no-album', !opts.album);
+            positionTimeline();
             if (!opts.load) $('load').style.display = 'none';
             if (!opts.bar) {
                 // 关闭功能栏时复位为展开态，下次开启时正常显示
@@ -1211,6 +1411,11 @@
             applyOptChrome();
             save();
         };
+        $('opt-timeline').onchange = function () {
+            opts.timeline = this.checked;
+            updateTimeline();
+            save();
+        };
 
         function syncOptInputs() {
             $('opt-rotate').checked = opts.rotate;
@@ -1219,6 +1424,7 @@
             $('opt-load').checked = opts.load;
             $('opt-album').checked = opts.album;
             $('opt-bar').checked = opts.bar;
+            $('opt-timeline').checked = opts.timeline;
             $('c-gyro').querySelector('.point').style.display = opts.gyro ? 'block' : 'none';
             $('c-rotate').querySelector('.point').style.display = opts.rotate ? 'block' : 'none';
         }
@@ -1233,7 +1439,9 @@
                             url: p.isBlob ? '' : p.url,
                             thumb: p.thumb || '',
                             isVideo: !!p.isVideo,
-                            fov: p.fov || null
+                            fov: p.fov || null,
+                            group: p.group || '',
+                            time: p.time || ''
                         };
                     }),
                     hotspots: hotspots,
@@ -1247,7 +1455,7 @@
                 if (s && s.photos && s.photos.length) {
                     photos = s.photos.filter(function (p) { return p.url; })
                         .map(function (p) {
-                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: !!p.isVideo, fov: p.fov || null };
+                            return { name: p.name, url: p.url, thumb: p.thumb || '', isBlob: false, isVideo: !!p.isVideo, fov: p.fov || null, group: p.group || '', time: p.time || '' };
                         });
                     hotspots = s.hotspots || [];
                 }
