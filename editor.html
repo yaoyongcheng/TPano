@@ -40,27 +40,73 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: margin-left .3s;
         }
+        body.side-collapsed #side { margin-left: -300px; }
+
+        /* 侧栏收起/展开手柄（固定在侧栏右缘，收起后贴屏幕左侧） */
+        #side-toggle {
+            position: fixed;
+            left: 300px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 300;
+            width: 20px;
+            height: 60px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            line-height: 1;
+            transition: left .3s;
+            user-select: none;
+        }
+        #side-toggle:hover { color: var(--text); background: var(--panel2); }
+        body.side-collapsed #side-toggle { left: 0; }
 
         #side .logo {
-            padding: 14px 16px;
+            padding: 10px 16px;
             border-bottom: 1px solid var(--border);
             font-size: 16px;
             font-weight: bold;
         }
         #side .logo span { color: var(--accent); }
 
+        /* ===== 分组折叠：点击 h3 收起/展开，默认收起不重要的分组，保证不出现滚动条 ===== */
         .sec {
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--border);
-            overflow-y: auto;
         }
         .sec h3 {
             font-size: 12px;
             color: var(--text-dim);
             font-weight: normal;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .sec h3::before {
+            content: "▾";
+            display: inline-block;
+            width: 14px;
+            color: var(--accent);
+        }
+        .sec h3:hover { color: var(--text); }
+        .sec.closed h3::before { content: "▸"; }
+        .sec.closed > *:not(h3) { display: none; }
+        /* 隐藏侧栏所有滚动条（内容仍可滚动），配合折叠与紧凑布局做到无滑块 */
+        #side, .sec, #photo-list { scrollbar-width: none; -ms-overflow-style: none; }
+        #side::-webkit-scrollbar, .sec::-webkit-scrollbar, #photo-list::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
         }
 
         .btn {
@@ -69,9 +115,9 @@
             color: var(--text);
             border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 7px 12px;
+            padding: 5px 10px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             transition: all .15s;
         }
         .btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -88,21 +134,22 @@
             border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text);
-            padding: 7px 8px;
-            font-size: 13px;
+            padding: 5px 8px;
+            font-size: 12px;
             outline: none;
         }
         .sec input[type=number]:focus { border-color: var(--accent); }
 
-        /* 照片列表 */
+        /* 照片列表：限高 + 隐藏滚动条，超出部分滚轮滚动 */
+        #photo-list { max-height: 176px; overflow-y: auto; }
         .photo-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
             cursor: pointer;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             background: var(--panel2);
             border: 1px solid transparent;
         }
@@ -135,10 +182,10 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 7px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
             background: var(--panel2);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-size: 13px;
         }
         .hs-item img { width: 22px; height: 22px; border-radius: 4px; }
@@ -148,7 +195,7 @@
         .hs-item .del { color: var(--text-dim); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
         .hs-item .del:hover { color: var(--danger); background: rgba(229,83,75,.15); }
 
-        .tip { color: var(--text-dim); font-size: 12px; line-height: 1.7; margin-top: 8px; }
+        .tip { color: var(--text-dim); font-size: 11px; line-height: 1.6; margin-top: 6px; }
         .coord { color: var(--accent); font-size: 12px; font-family: Consolas, monospace; margin-top: 6px; min-height: 16px; }
 
         /* ===== 画布区 ===== */
@@ -286,7 +333,7 @@
             overflow: hidden;
             width: 42px;
             height: 170px;
-            transition: height .2s;
+            transition: height .2s, bottom .2s;
             z-index: 6;
         }
         #controller-y .item {
@@ -314,6 +361,7 @@
         }
         #controller-y .item-s { position: absolute; bottom: 2px; }
         #controller-y.collapsed { height: 42px; }
+        #controller-y.up { bottom: 176px; } /* 相册栏展开时上移避让，避免被遮挡无法点击 */
         body.no-bar #controller-y { display: none; }
 
         /* ===== 底部相册栏（同示例页 #photo-box） ===== */
@@ -369,7 +417,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 0;
+            padding: 3px 0;
             font-size: 13px;
             cursor: pointer;
             user-select: none;
@@ -383,8 +431,8 @@
             border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text);
-            padding: 7px 8px;
-            font-size: 13px;
+            padding: 5px 8px;
+            font-size: 12px;
             outline: none;
         }
         .sec input[type=text]:focus { border-color: var(--accent); }
@@ -457,24 +505,22 @@
         <!-- 全景照片 -->
         <div class="sec">
             <h3>全景照片</h3>
-            <div class="btn-row" style="margin-bottom:10px">
+            <div class="btn-row" style="margin-bottom:8px">
                 <button class="btn primary" id="btn-add-photo">＋ 添加全景图</button>
             </div>
             <input type="file" id="file-input" accept="image/*,video/mp4,video/webm" multiple style="display:none">
             <div id="photo-list"></div>
-            <div class="tip" style="margin-top:10px">当前照片视野 FOV（文档提示：设置不当会黑屏或边缘严重变形，推荐 PC 60 / 手机 90）</div>
             <div class="btn-row" style="margin-top:6px">
-                <input type="number" id="fov-pc" min="30" max="110" placeholder="PC 视野角">
-                <input type="number" id="fov-phone" min="30" max="110" placeholder="手机视野角">
-                <button class="btn" id="btn-fov">应用</button>
+                <input type="number" id="fov-pc" min="30" max="110" placeholder="PC 视野角" title="推荐 60，设置不当会黑屏或边缘严重变形">
+                <input type="number" id="fov-phone" min="30" max="110" placeholder="手机视野角" title="推荐 90，设置不当会黑屏或边缘严重变形">
+                <button class="btn" id="btn-fov">应用 FOV</button>
             </div>
-            <div class="tip">点击列表项切换查看；「添加热点」模式下点击全景图即可放置热点。</div>
         </div>
 
         <!-- 热点编辑 -->
         <div class="sec">
             <h3>热点</h3>
-            <div class="btn-row" style="margin-bottom:10px">
+            <div class="btn-row" style="margin-bottom:8px">
                 <button class="btn" id="btn-add-hs">📍 添加热点</button>
             </div>
             <div class="coord" id="coord-tip"></div>
@@ -488,12 +534,12 @@
             <input type="text" id="tl-group" placeholder="如：客厅 / 工位A">
             <div class="field-label">时间标签</div>
             <input type="text" id="tl-time" placeholder="如：毛坯 / 装修后 / 白天 / 夜景">
-            <label class="opt-row" style="margin-top:8px"><input type="checkbox" id="opt-timeline"> 展示页显示时间轴 <span class="sub">同点位 ≥2 张时出现</span></label>
+            <label class="opt-row" style="margin-top:6px"><input type="checkbox" id="opt-timeline"> 展示页显示时间轴 <span class="sub">同点位 ≥2 张时出现</span></label>
             <div id="tl-overview" class="tip"></div>
         </div>
 
-        <!-- 展示功能（同示例页功能点） -->
-        <div class="sec">
+        <!-- 展示功能（同示例页功能点，默认收起） -->
+        <div class="sec closed">
             <h3>展示功能（实时预览，随展示页导出）</h3>
             <label class="opt-row"><input type="checkbox" id="opt-rotate"> 镜头自转 <span class="sub">打开后自动旋转，拖拽即停</span></label>
             <label class="opt-row"><input type="checkbox" id="opt-gyro"> 体感控制 <span class="sub">手机陀螺仪，需 https</span></label>
@@ -513,12 +559,14 @@
             </div>
             <input type="file" id="json-input" accept=".json" style="display:none">
             <div class="tip">
-                · 配置会自动保存到浏览器，刷新不丢失<br>
-                · 本地选择的图片刷新后需重新添加<br>
-                · 「导出展示页」生成单文件 HTML，脚本和图片全部内嵌，发给任何人双击即可打开
+                · 配置自动保存到浏览器，刷新不丢失；本地图片刷新后需重新添加<br>
+                · 「导出展示页」生成单文件 HTML，双击即可打开
             </div>
         </div>
     </div>
+
+    <!-- 侧栏收起/展开手柄 -->
+    <div id="side-toggle" title="收起/展开编辑栏">‹</div>
 
     <!-- ===== 画布 ===== -->
     <div id="stage">
@@ -956,10 +1004,11 @@
             $('tl-group').value = p && p.group ? p.group : '';
             $('tl-time').value = p && p.time ? p.time : '';
         }
-        // 相册栏展开时时间轴上移避让
+        // 相册栏展开时时间轴上移避让、右下功能栏同步上移
         function positionTimeline() {
             var open = opts.album && $('photo-box').classList.contains('open');
             $('timeline').classList.toggle('up', !!open);
+            $('controller-y').classList.toggle('up', !!open);
         }
         function updateTimeline() {
             var box = $('timeline');
@@ -1248,7 +1297,8 @@
                 }
 
                 if (opts.bar) {
-                    css += '#controller-y{position:absolute;bottom:40px;right:16px;display:flex;flex-direction:column;background-color:rgba(20,20,20,.4);border-radius:50px;padding:2px;width:42px;height:170px;overflow:hidden;transition:height .2s;z-index:6}\n'
+                    css += '#controller-y{position:absolute;bottom:40px;right:16px;display:flex;flex-direction:column;background-color:rgba(20,20,20,.4);border-radius:50px;padding:2px;width:42px;height:170px;overflow:hidden;transition:height .2s,bottom .2s;z-index:6}\n'
+                        + '#controller-y.up{bottom:204px}\n'
                         + '#controller-y .item{background-color:#fff;border-radius:50px;box-sizing:border-box;width:36px;height:36px;padding:6px;margin:3.2px;position:relative;cursor:pointer;transition:opacity .4s}\n'
                         + '#controller-y .item>img{width:100%;height:100%;display:block}\n'
                         + '#controller-y .point{position:absolute;width:10px;height:10px;background-color:#00aeff;border-radius:50px;right:0;bottom:-2px;display:none}\n'
@@ -1283,7 +1333,7 @@
                     chromeJs += 'var albumOpen=false;\n'
                         + 'function buildAlbum(){var box=document.getElementById("photo-box-list");if(!box)return;box.innerHTML="";for(var i=0;i<PHOTOS.length;i++){var p=PHOTOS[i];var div=document.createElement("div");div.className="photo-box-div";var img=document.createElement("img");img.className="photo-box-img";img.src=p.type==="VIDEO"?VIDEOICON:(p.thumb||p.url);var nm=document.createElement("p");nm.className="photo-box-p";nm.textContent=p.name;div.appendChild(img);div.appendChild(nm);(function(idx){div.onclick=function(){tpano.re.switchPhoto(idx+1)};})(i);box.appendChild(div);}}\n'
                         + 'buildAlbum();\n'
-                        + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";var tl=document.getElementById("timeline");if(tl)tl.classList.toggle("up",albumOpen);}\n'
+                        + 'function toggleAlbum(){albumOpen=!albumOpen;var box=document.getElementById("photo-box");box.classList.toggle("open",albumOpen);box.style.opacity=albumOpen?"1":"0";box.style.height=albumOpen?"160px":"0";var pt=document.querySelector("#v-photo .point");if(pt)pt.style.display=albumOpen?"block":"none";var tl=document.getElementById("timeline");if(tl)tl.classList.toggle("up",albumOpen);var cy=document.getElementById("controller-y");if(cy)cy.classList.toggle("up",albumOpen);}\n'
                         + 'function renderAlbumCur(idx){var kids=document.getElementById("photo-box-list").children;for(var i=0;i<kids.length;i++){kids[i].style.outline=i===idx?"2px solid #4f8cff":"none";}}\n';
                     if (!opts.bar) {
                         // 没有功能栏时相册栏默认展开
@@ -1445,7 +1495,8 @@
                         };
                     }),
                     hotspots: hotspots,
-                    opts: opts
+                    opts: opts,
+                    sideCollapsed: document.body.classList.contains('side-collapsed')
                 }));
             } catch (e) { }
         }
@@ -1463,6 +1514,9 @@
                     for (var k in opts) {
                         if (s.opts[k] != null) opts[k] = !!s.opts[k];
                     }
+                }
+                if (s && s.sideCollapsed) {
+                    document.body.classList.add('side-collapsed');
                 }
             } catch (e) { }
             // 首次使用时预置示例全景图（panorama_2x1.jpg 为用户实测可用的 2:1 球面全景；thumb 为小缩略图，避免侧栏把原图全量拉下来）
@@ -1486,6 +1540,33 @@
                 tpano.re.resizeRendererToDisplaySize(el.clientWidth, el.clientHeight);
             }
         });
+
+        //==================== 侧栏分组折叠 ====================
+        Array.prototype.forEach.call(document.querySelectorAll('#side .sec h3'), function (h) {
+            h.addEventListener('click', function () {
+                h.parentElement.classList.toggle('closed');
+            });
+        });
+
+        //==================== 侧栏收起/展开 ====================
+        function setSideCollapsed(c) {
+            document.body.classList.toggle('side-collapsed', c);
+            $('side-toggle').textContent = c ? '›' : '‹';
+            // 画布宽度随侧栏收起变大，过渡结束后重设渲染器尺寸
+            setTimeout(function () {
+                if (tpano) {
+                    var el = $('pano');
+                    tpano.re.resizeRendererToDisplaySize(el.clientWidth, el.clientHeight);
+                }
+            }, 320);
+        }
+        $('side-toggle').onclick = function () {
+            var c = !document.body.classList.contains('side-collapsed');
+            setSideCollapsed(c);
+            save();
+        };
+        // 侧栏手柄箭头与恢复的状态同步
+        $('side-toggle').textContent = document.body.classList.contains('side-collapsed') ? '›' : '‹';
         // 初始视野输入框
         updateFovInputs();
     </script>
